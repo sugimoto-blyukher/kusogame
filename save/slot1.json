@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "saved_at": 1772060879,
+  "map_key": "field_01",
+  "tile_x": 13,
+  "tile_y": 7,
+  "hero": {
+    "name": "ゆうしゃ",
+    "level": 1,
+    "exp": 0,
+    "max_hp": 28,
+    "hp": 28,
+    "max_mp": 10,
+    "mp": 10,
+    "attack": 8,
+    "defense": 5,
+    "gold": 0,
+    "herb_count": 3,
+    "resonance": 1,
+    "companions": []
+  },
+  "story": {
+    "story_chapter": 2,
+    "core_restored": {
+      "field_01": true,
+      "field_02": false,
+      "field_03": false,
+      "field_04": false,
+      "field_05": false,
+      "field_06": false,
+      "field_07": false,
+      "field_08": false,
+      "field_09": false,
+      "field_10": false
+    },
+    "future_revealed": false,
+    "ending_type": null
+  }
+}
