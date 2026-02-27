@@ -170,7 +170,8 @@ class GameWindow < Gosu::Window
     @hud_font.draw_text("共鳴 #{@hero.resonance}  盟友 #{@hero.companion_count}/#{@hero.companion_limit}", x + 10, y + 52, 21, 1.0, 1.0, Gosu::Color::BLACK)
 
     @hud_font.draw_text("C:盟友メニュー  Z:調べる/会話  F5:セーブ  F9:ロード", 262, 10, 21, 1.0, 1.0, Gosu::Color::WHITE)
-    @hud_font.draw_text("章 #{@story.chapter}: #{@story.objective_text}", 262, 58, 21, 1.0, 1.0, Gosu::Color::WHITE)
+    layer_text = layer_label(@world_map.current_layer)
+    @hud_font.draw_text("層 #{layer_text}  章 #{@story.chapter}: #{@story.objective_text}", 262, 58, 21, 1.0, 1.0, Gosu::Color::WHITE)
     @hud_font.draw_text(@notice_text, 262, 36, 21, 1.0, 1.0, Gosu::Color.new(0xFFFFE089)) if notice_active?
   end
 
@@ -425,6 +426,17 @@ class GameWindow < Gosu::Window
     Integer(value, 10)
   rescue StandardError
     fallback
+  end
+
+  def layer_label(layer)
+    case layer
+    when :town
+      "街"
+    when :dungeon
+      "ダンジョン"
+    else
+      "フィールド"
+    end
   end
 
   def show_notice(text)

@@ -20,7 +20,7 @@ module GameConfig
   TEST_MAP_WIDTH = 36
   TEST_MAP_HEIGHT = 24
   BORDER_BLOCKED = true
-  IMPASSABLE_TILE_INDICES = [5, 6, 7, 8, 9, 10, 14].freeze
+  IMPASSABLE_TILE_INDICES = [5, 6, 7, 8, 9, 10, 14, 16, 18, 22, 24, 28, 29, 31].freeze
 
   NPC_SPAWNS = {
     field_01: [
@@ -55,27 +55,146 @@ module GameConfig
     field_10: [18, 16]
   }.freeze
 
-  WORLD_MAP_IDS = (1..10).map { |n| format("field_%02d", n).to_sym }.freeze
+  FIELD_MAP_IDS = (1..10).map { |n| format("field_%02d", n).to_sym }.freeze
+  TOWN_MAP_IDS = (1..20).map { |n| format("town_%02d", n).to_sym }.freeze
+  DUNGEON_MAP_IDS = (1..10).map { |n| format("dungeon_%02d", n).to_sym }.freeze
+  WORLD_MAP_IDS = FIELD_MAP_IDS
   START_MAP = :field_01
+
+  def self.build_town_rows(index)
+    rows = Array.new(TEST_MAP_HEIGHT) { Array.new(TEST_MAP_WIDTH, 0) }
+    center_x = TEST_MAP_WIDTH / 2
+    center_y = TEST_MAP_HEIGHT / 2
+    house_x = 6 + (index % 4)
+    pond_x = TEST_MAP_WIDTH - 10 - (index % 3)
+
+    (2...(TEST_MAP_WIDTH - 2)).each do |x|
+      rows[3][x] = 11
+      rows[TEST_MAP_HEIGHT - 4][x] = 11
+    end
+    (3...(TEST_MAP_HEIGHT - 3)).each do |y|
+      rows[y][center_x] = 11
+    end
+
+    (house_x...(house_x + 7)).each do |x|
+      (6..10).each do |y|
+        rows[y][x] = 9
+      end
+    end
+    rows[10][house_x + 3] = 0
+
+    (pond_x...(pond_x + 4)).each do |x|
+      (8..11).each do |y|
+        rows[y][x] = 6
+      end
+    end
+
+    rows[center_y][1] = 0
+    rows[center_y][2] = 11
+
+    rows
+  end
+
+  def self.build_dungeon_rows(index)
+    rows = Array.new(TEST_MAP_HEIGHT) { Array.new(TEST_MAP_WIDTH, 8) }
+    center_y = TEST_MAP_HEIGHT / 2
+    center_x = TEST_MAP_WIDTH / 2
+
+    (1...(TEST_MAP_WIDTH - 1)).each do |x|
+      rows[center_y][x] = 0
+    end
+    (2...(TEST_MAP_HEIGHT - 2)).each do |y|
+      rows[y][center_x] = 0
+    end
+
+    [8, 14, 22, 28].each do |x|
+      offset = (index + x) % 5
+      (4...(TEST_MAP_HEIGHT - 4)).each do |y|
+        rows[y][x] = 0 if ((y + offset) % 3).zero?
+      end
+    end
+
+    (3...(TEST_MAP_WIDTH - 3)).step(6) do |x|
+      rows[5][x] = 0
+      rows[TEST_MAP_HEIGHT - 6][x + 2] = 0 if x + 2 < TEST_MAP_WIDTH - 2
+    end
+
+    rows[center_y][1] = 0
+    rows[center_y][2] = 0
+
+    rows
+  end
+
+  def self.town_npcs(town_index)
+    sprite_a = format("npc_%02d.png", (town_index % 15) + 1)
+    sprite_b = format("npc_%02d.png", ((town_index + 6) % 15) + 1)
+    [
+      { name: "町人#{town_index + 1}A", tile: [12, 8], sprite: sprite_a },
+      { name: "町人#{town_index + 1}B", tile: [23, 14], sprite: sprite_b }
+    ]
+  end
 
   WORLD_MAPS = begin
     maps = {}
     mid_y = TEST_MAP_HEIGHT / 2
     top_x = TEST_MAP_WIDTH / 2
 
-    WORLD_MAP_IDS.each_with_index do |map_id, index|
-      prev_map = WORLD_MAP_IDS[(index - 1) % WORLD_MAP_IDS.length]
-      next_map = WORLD_MAP_IDS[(index + 1) % WORLD_MAP_IDS.length]
-      opposite_map = WORLD_MAP_IDS[(index + 5) % WORLD_MAP_IDS.length]
+    field_count = FIELD_MAP_IDS.length
 
-      maps[map_id] = {
+    FIELD_MAP_IDS.each_with_index do |field_id, index|
+      prev_map = FIELD_MAP_IDS[(index - 1) % FIELD_MAP_IDS.length]
+      next_map = FIELD_MAP_IDS[(index + 1) % FIELD_MAP_IDS.length]
+      opposite_map = FIELD_MAP_IDS[(index + 5) % FIELD_MAP_IDS.length]
+      town_id_a = TOWN_MAP_IDS[index]
+      town_id_b = TOWN_MAP_IDS[index + field_count]
+      dungeon_id = DUNGEON_MAP_IDS[index]
+
+      maps[field_id] = {
+        layer: :field,
+        parent: nil,
         file: File.join(BASE_DIR, "mdat", format("world_%02d.dat", index + 1)),
         spawn_tile: [2, mid_y],
-        npcs: NPC_SPAWNS.fetch(map_id, []),
+        npcs: NPC_SPAWNS.fetch(field_id, []),
         warps: [
           { tile: [1, mid_y], to: prev_map, spawn: [TEST_MAP_WIDTH - 3, mid_y] },
           { tile: [TEST_MAP_WIDTH - 2, mid_y], to: next_map, spawn: [2, mid_y] },
-          { tile: [top_x, 1], to: opposite_map, spawn: [top_x, TEST_MAP_HEIGHT - 3] }
+          { tile: [top_x, 1], to: opposite_map, spawn: [top_x, TEST_MAP_HEIGHT - 3] },
+          { tile: [top_x - 4, 3], to: town_id_a, spawn: [2, mid_y] },
+          { tile: [top_x - 2, 3], to: town_id_b, spawn: [2, mid_y] },
+          { tile: [top_x + 2, 3], to: dungeon_id, spawn: [2, mid_y] }
+        ]
+      }
+
+      maps[town_id_a] = {
+        layer: :town,
+        parent: field_id,
+        file: File.join(BASE_DIR, "mdat", format("town_%02d.dat", index + 1)),
+        spawn_tile: [2, mid_y],
+        npcs: town_npcs(index),
+        warps: [
+          { tile: [1, mid_y], to: field_id, spawn: [top_x - 4, 4] }
+        ]
+      }
+
+      maps[town_id_b] = {
+        layer: :town,
+        parent: field_id,
+        file: File.join(BASE_DIR, "mdat", format("town_%02d.dat", index + field_count + 1)),
+        spawn_tile: [2, mid_y],
+        npcs: town_npcs(index + field_count),
+        warps: [
+          { tile: [1, mid_y], to: field_id, spawn: [top_x - 2, 4] }
+        ]
+      }
+
+      maps[dungeon_id] = {
+        layer: :dungeon,
+        parent: field_id,
+        source: build_dungeon_rows(index),
+        spawn_tile: [2, mid_y],
+        npcs: [],
+        warps: [
+          { tile: [1, mid_y], to: field_id, spawn: [top_x + 2, 4] }
         ]
       }
     end

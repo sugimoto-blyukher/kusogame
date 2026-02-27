@@ -2,11 +2,13 @@ require_relative "map"
 require_relative "game_config"
 
 class WorldMapManager
-  attr_reader :current_key, :base_map, :sub_map, :collision_map, :warps, :npcs
+  attr_reader :current_key, :current_layer, :parent_key, :base_map, :sub_map, :collision_map, :warps, :npcs
 
   def initialize(world_maps)
     @world_maps = world_maps
     @current_key = nil
+    @current_layer = :field
+    @parent_key = nil
     @base_map = nil
     @sub_map = nil
     @collision_map = nil
@@ -17,8 +19,11 @@ class WorldMapManager
 
   def load!(map_key, spawn_override = nil)
     info = @world_maps.fetch(map_key)
+    map_source = info.key?(:source) ? info[:source] : info[:file]
     @current_key = map_key
-    @base_map = Map.new(info[:file])
+    @current_layer = info[:layer] || :field
+    @parent_key = info[:parent]
+    @base_map = Map.new(map_source)
     @sub_map = build_empty_sub_map(@base_map)
     @warps = info[:warps]
     @npcs = info[:npcs] || []
