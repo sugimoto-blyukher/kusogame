@@ -106,11 +106,7 @@ class GameWindow < Gosu::Window
 
     target_x = @player.mx - GameConfig::VIEW_W / 2
     target_y = @player.my - GameConfig::VIEW_H / 2
-
-    max_x = [@map_base.size_x * GameConfig::TILE_SIZE - GameConfig::VIEW_W, 0].max
-    max_y = [@map_base.size_y * GameConfig::TILE_SIZE - GameConfig::VIEW_H, 0].max
-    target_x = [[target_x, 0].max, max_x].min
-    target_y = [[target_y, 0].max, max_y].min
+    target_x, target_y = clamp_camera_target(target_x, target_y)
 
     @camera_x += (target_x - @camera_x) * GameConfig::CAMERA_LERP
     @camera_y += (target_y - @camera_y) * GameConfig::CAMERA_LERP
@@ -282,7 +278,7 @@ class GameWindow < Gosu::Window
   end
 
   def handle_map_transition
-    player_tile = [@player.mx / GameConfig::TILE_SIZE, @player.my / GameConfig::TILE_SIZE]
+    player_tile = player_tile_position
     transition = @world_map.transition_for(*player_tile)
     return unless transition
 
@@ -292,11 +288,7 @@ class GameWindow < Gosu::Window
   def reset_camera
     @map_x = @player.mx - GameConfig::VIEW_W / 2
     @map_y = @player.my - GameConfig::VIEW_H / 2
-
-    max_x = [@map_base.size_x * GameConfig::TILE_SIZE - GameConfig::VIEW_W, 0].max
-    max_y = [@map_base.size_y * GameConfig::TILE_SIZE - GameConfig::VIEW_H, 0].max
-    @map_x = [[@map_x, 0].max, max_x].min
-    @map_y = [[@map_y, 0].max, max_y].min
+    @map_x, @map_y = clamp_camera_target(@map_x, @map_y)
     @camera_x = @map_x.to_f
     @camera_y = @map_y.to_f
   end
@@ -341,7 +333,7 @@ class GameWindow < Gosu::Window
   end
 
   def handle_map_button(id)
-    if [Gosu::KB_Z, Gosu::KB_RETURN, Gosu::KB_SPACE].include?(id)
+    if confirm_button?(id)
       if map_dialog_active?
         advance_map_dialog
       else
@@ -396,8 +388,7 @@ class GameWindow < Gosu::Window
   end
 
   def save_progress
-    tile_x = @player.mx / GameConfig::TILE_SIZE
-    tile_y = @player.my / GameConfig::TILE_SIZE
+    tile_x, tile_y = player_tile_position
     SaveData.save(
       hero: @hero,
       map_key: @world_map.current_key,
@@ -457,16 +448,11 @@ class GameWindow < Gosu::Window
   end
 
   def advance_map_dialog
-    if @map_dialog_queue.empty?
-      @map_dialog_text = nil
-    else
-      @map_dialog_text = @map_dialog_queue.shift
-    end
+    @map_dialog_text = @map_dialog_queue.shift
   end
 
   def start_world_interaction
-    player_tile_x = @player.mx / GameConfig::TILE_SIZE
-    player_tile_y = @player.my / GameConfig::TILE_SIZE
+    player_tile_x, player_tile_y = player_tile_position
 
     npc = nearby_npc(player_tile_x, player_tile_y)
     if npc
@@ -491,5 +477,22 @@ class GameWindow < Gosu::Window
 
   def tile_near?(x1, y1, x2, y2, range:)
     (x1 - x2).abs + (y1 - y2).abs <= range
+  end
+
+  def confirm_button?(id)
+    [Gosu::KB_Z, Gosu::KB_RETURN, Gosu::KB_SPACE].include?(id)
+  end
+
+  def player_tile_position
+    [@player.mx / GameConfig::TILE_SIZE, @player.my / GameConfig::TILE_SIZE]
+  end
+
+  def clamp_camera_target(target_x, target_y)
+    max_x = [@map_base.size_x * GameConfig::TILE_SIZE - GameConfig::VIEW_W, 0].max
+    max_y = [@map_base.size_y * GameConfig::TILE_SIZE - GameConfig::VIEW_H, 0].max
+    [
+      [[target_x, 0].max, max_x].min,
+      [[target_y, 0].max, max_y].min
+    ]
   end
 end
