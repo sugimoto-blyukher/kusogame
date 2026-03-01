@@ -335,21 +335,21 @@ class BattleScene
     draw_panel(22, 20, 270, 92)
     draw_panel(328, 170, 290, 100)
 
-    @ui_font.draw_text(@enemy.name, 36, 34, 30, 1.0, 1.0, Gosu::Color::BLACK)
-    @ui_font.draw_text(@hero.name, 344, 184, 30, 1.0, 1.0, Gosu::Color::BLACK)
+    @ui_font.draw_text(@enemy.name, 36, 34, 50, 1.0, 1.0, Gosu::Color::BLACK)
+    @ui_font.draw_text(@hero.name, 344, 184, 50, 1.0, 1.0, Gosu::Color::BLACK)
 
-    @small_font.draw_text("HP", 36, 66, 31, 1.0, 1.0, Gosu::Color::BLACK)
-    @small_font.draw_text("HP", 344, 216, 31, 1.0, 1.0, Gosu::Color::BLACK)
-    @small_font.draw_text("MP", 484, 216, 31, 1.0, 1.0, Gosu::Color::BLACK)
-    @small_font.draw_text("共鳴 #{@hero.resonance}", 344, 196, 31, 1.0, 1.0, Gosu::Color::BLACK)
-    @small_font.draw_text("盟友 #{@hero.companion_count}/#{@hero.companion_limit}", 462, 196, 31, 1.0, 1.0, Gosu::Color::BLACK)
+    @small_font.draw_text("HP", 36, 66, 51, 1.0, 1.0, Gosu::Color::BLACK)
+    @small_font.draw_text("HP", 344, 216, 51, 1.0, 1.0, Gosu::Color::BLACK)
+    @small_font.draw_text("MP", 484, 216, 51, 1.0, 1.0, Gosu::Color::BLACK)
+    @small_font.draw_text("共鳴 #{@hero.resonance}", 344, 196, 51, 1.0, 1.0, Gosu::Color::BLACK)
+    @small_font.draw_text("盟友 #{@hero.companion_count}/#{@hero.companion_limit}", 462, 196, 51, 1.0, 1.0, Gosu::Color::BLACK)
 
-    draw_hp_bar(70, 68, 180, @enemy.hp, @enemy.max_hp)
-    draw_hp_bar(378, 218, 90, @hero.hp, @hero.max_hp)
+    draw_hp_bar(70, 68, 180, @enemy.hp, @enemy.max_hp, style: :enemy)
+    draw_hp_bar(378, 218, 90, @hero.hp, @hero.max_hp, style: :hero)
 
-    @small_font.draw_text("#{@enemy.hp}/#{@enemy.max_hp}", 200, 88, 31, 1.0, 1.0, Gosu::Color::BLACK)
-    @small_font.draw_text("#{@hero.hp}/#{@hero.max_hp}", 344, 238, 31, 1.0, 1.0, Gosu::Color::BLACK)
-    @small_font.draw_text("#{@hero.mp}/#{@hero.max_mp}", 484, 238, 31, 1.0, 1.0, Gosu::Color::BLACK)
+    @small_font.draw_text("#{@enemy.hp}/#{@enemy.max_hp}", 200, 88, 51, 1.0, 1.0, Gosu::Color::BLACK)
+    @small_font.draw_text("#{@hero.hp}/#{@hero.max_hp}", 344, 238, 51, 1.0, 1.0, Gosu::Color::BLACK)
+    @small_font.draw_text("#{@hero.mp}/#{@hero.max_mp}", 484, 238, 51, 1.0, 1.0, Gosu::Color::BLACK)
   end
 
   def draw_bottom_ui
@@ -386,21 +386,42 @@ class BattleScene
     Gosu.draw_rect(x + 8, y + 8, w - 16, h - 16, Gosu::Color::WHITE, 40)
   end
 
-  def draw_hp_bar(x, y, w, hp, max_hp)
+  def draw_hp_bar(x, y, w, hp, max_hp, style: :enemy)
     ratio = max_hp.zero? ? 0.0 : [[hp.to_f / max_hp, 0.0].max, 1.0].min
-    fill_w = (w * ratio).round
+    inner_w = [w - 4, 0].max
+    fill_w = (inner_w * ratio).round
+    # HPが残っている間は最小1pxを表示して、瀕死時でも視認できるようにする。
+    fill_w = 1 if hp.positive? && fill_w.zero?
 
-    color = if ratio > 0.5
-              Gosu::Color.new(0xFF4FD460)
-            elsif ratio > 0.2
-              Gosu::Color.new(0xFFF2CB3D)
-            else
-              Gosu::Color.new(0xFFE15959)
-            end
+    color = hp_bar_color(ratio, style)
 
-    Gosu.draw_rect(x, y, w, 14, Gosu::Color.new(0xFF2B2B2B), 32)
-    Gosu.draw_rect(x + 2, y + 2, w - 4, 10, Gosu::Color.new(0xFF1B1B1B), 33)
-    Gosu.draw_rect(x + 2, y + 2, [fill_w - 4, 0].max, 10, color, 34)
+    Gosu.draw_rect(x, y, w, 14, Gosu::Color.new(0xFF2B2B2B), 52)
+    Gosu.draw_rect(x + 1, y + 1, w - 2, 12, Gosu::Color.new(0xFF4A4A4A), 53)
+    Gosu.draw_rect(x + 2, y + 2, w - 4, 10, Gosu::Color.new(0xFF1B1B1B), 54)
+    Gosu.draw_rect(x + 2, y + 2, fill_w, 10, color, 54)
+    Gosu.draw_rect(x + 2, y + 2, fill_w, 2, Gosu::Color.new(0x66FFFFFF), 55)
+  end
+
+  def hp_bar_color(ratio, style)
+    return hero_hp_color(ratio) if style == :hero
+
+    if ratio > 0.5
+      Gosu::Color.new(0xFF67D251)
+    elsif ratio > 0.2
+      Gosu::Color.new(0xFFF5C53B)
+    else
+      Gosu::Color.new(0xFFE15B5B)
+    end
+  end
+
+  def hero_hp_color(ratio)
+    if ratio > 0.5
+      Gosu::Color.new(0xFF34C27D)
+    elsif ratio > 0.2
+      Gosu::Color.new(0xFFF0BE44)
+    else
+      Gosu::Color.new(0xFFDE6A6A)
+    end
   end
 
   def move_selection(dx, dy)

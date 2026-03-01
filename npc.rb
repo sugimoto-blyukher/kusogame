@@ -19,4 +19,15 @@ class Npc
     draw_y = base_y + (@tile_size - @image.height) + bob
     @image.draw(draw_x, draw_y, z)
   end
+
+  def auto_move()
+    @tile_x += rand(-1..1)
+    @tile_y += rand(-1..1)
+    if @tile_x < 0
+      @tile_x = 0
+    end
+    if @tile_y < 0
+      @tile_y = 0
+    end
+  end
 end

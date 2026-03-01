@@ -275,8 +275,11 @@ class GameWindow < Gosu::Window
 
     @map_npcs.each do |npc|
       npc.draw(@map_x, @map_y, GameConfig::VIEW_X, GameConfig::VIEW_Y, 6)
+
+      npc.auto_move if rand(100) < 2 # 2%の確率でNPCがランダムに移動
     end
   end
+
 
   def handle_map_transition
     player_tile = player_tile_position
